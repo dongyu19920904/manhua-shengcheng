@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>二次元连环画生成器</title>
+    <style>
+        body {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 40px 30px;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0ebff 100%);
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(24,144,255,0.15);
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            min-height: 10px;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #69c0ff;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 16px rgba(24,144,255,0.15);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        button {
+            background: linear-gradient(135deg, #1890ff, #096dd9);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(24,144,255,0.3);
+            transition: all 0.2s;
+        }
+ 
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(24,144,255,0.4);
+        }
+ 
+        button:active {
+            transform: translateY(0);
+        }
+ 
+        button:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+ 
+        #preview {
+            margin-top: 20px;
+        }
+        
+        .comic-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .comic-panel {
+            width: calc(50% - 20px);
+            border: 2px solid #bae7ff;
+            padding: 15px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 8px 32px rgba(24,144,255,0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        
+        .comic-panel:hover {
+            transform: translateY(-4px);
+        }
+        
+        .comic-panel img {
+            width: 100%;
+            border-radius: 8px;
+        }
+        
+        .panel-caption {
+            margin-top: 12px;
+            font-size: 15px;
+            text-align: left;
+            line-height: 1.6;
+            padding: 12px 15px;
+            background: rgba(240, 240, 255, 0.7);
+            border-radius: 8px;
+            border-left: 3px solid #1890ff;
+        }
+        
+        .caption-title {
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .caption-content {
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .caption-story {
+            color: #333;
+            font-style: italic;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #ccc;
+        }
+        
+        .caption-dialog {
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 10px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .story-separator {
+            display: block;
+            text-align: center;
+            margin: 8px 0;
+            font-size: 14px;
+            color: #1890ff;
+        }
+        
+        .character-dialog {
+            margin-bottom: 5px;
+            padding-left: 5px;
+        }
+        
+        .character-name {
+            font-weight: bold;
+            color: #722ed1;
+            margin-right: 5px;
+        }
+        
+        .character-thought {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            font-style: italic;
+            color: #096dd9;
+        }
+        
+        .panel-number {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            background: #1890ff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        #storyTitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #096dd9;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .advanced-options {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            border: 1px dashed #69c0ff;
+        }
+        
+        .advanced-toggle {
+            cursor: pointer;
+            color: #1890ff;
+            text-decoration: underline;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .ai-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff4d4f, #722ed1);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .panel-loading {
+            background: rgba(0, 0, 0, 0.1);
+            color: #1890ff;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .comic-panel img {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .template-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .template-item {
+            background: linear-gradient(135deg, #fff0f6 0%, #f9f0ff 100%);
+            border: 1px solid #ffadd2;
+            border-radius: 12px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .template-item:hover {
+            background: linear-gradient(135deg, #ffadd2 0%, #d3adf7 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .header-image {
+            width: 100%;
+            height: 150px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            object-fit: cover;
+            background: url('https://image.pollinations.ai/prompt/anime%20comic%20cover%20colorful%20vibrant%20manga%20style?width=800&height=150&nologo=true') center/cover;
+        }
+        
+        .share-button {
+            background: linear-gradient(135deg, #13c2c2, #006d75);
+            margin-left: 10px;
+        }
+        
+        .download-button {
+            background: linear-gradient(135deg, #52c41a, #237804);
+            margin-left: 10px;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .story-summary {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #1890ff;
+        }
+        
+        .mood-tag {
+            display: inline-block;
+            background: #f0f5ff;
+            color: #1890ff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+        
+        .element-tag {
+            display: inline-block;
+            background: #f6ffed;
+            color: #52c41a;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+        
+        .tags-container {
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-image"></div>
+    <h2>二次元连环画生成器 <span class="ai-badge">AI驱动</span></h2>
+    
+    <div class="template-container">
+        <div class="template-item" onclick="applyTemplate('青春校园')">青春校园</div>
+        <div class="template-item" onclick="applyTemplate('仙侠修真')">仙侠修真</div>
+        <div class="template-item" onclick="applyTemplate('都市爱情')">都市爱情</div>
+        <div class="template-item" onclick="applyTemplate('科幻冒险')">科幻冒险</div>
+        <div class="template-item" onclick="applyTemplate('热血战斗')">热血战斗</div>
+        <div class="template-item" onclick="applyTemplate('唯美古风')">唯美古风</div>
+        <div class="template-item" onclick="applyTemplate('奇幻冒险')">奇幻冒险</div>
+        <div class="template-item" onclick="applyTemplate('甜蜜恋爱')">甜蜜恋爱</div>
+    </div>
+     
+    <div class="control-group">
+        <label for="storyPrompt">故事描述:</label>
+        <textarea id="storyPrompt" placeholder="请输入一个简短的故事描述，比如'一个高中生意外获得超能力后的校园生活'、'两个相爱的人在平行世界中的相遇'等..." rows="4"></textarea>
+    </div>
+    
+    <div class="two-columns">
+        <div class="control-group">
+            <label for="panelCount">面板数量:</label>
+            <input type="number" id="panelCount" value="6" min="2" max="12">
+        </div>
+    
+        <div class="control-group">
+            <label for="storyType">故事类型:</label>
+            <select id="storyType">
+                <option value="青春校园">青春校园</option>
+                <option value="仙侠修真">仙侠修真</option>
+                <option value="都市爱情">都市爱情</option>
+                <option value="科幻冒险">科幻冒险</option>
+                <option value="热血战斗">热血战斗</option>
+                <option value="唯美古风">唯美古风</option>
+                <option value="悬疑推理">悬疑推理</option>
+                <option value="奇幻冒险">奇幻冒险</option>
+                <option value="甜蜜恋爱">甜蜜恋爱</option>
+                <option value="职场生活">职场生活</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="advanced-options-toggle">
+        <span class="advanced-toggle" onclick="toggleAdvancedOptions()">高级选项 ▼</span>
+        <div id="advancedOptions" class="advanced-options hidden">
+            <div class="two-columns">
+                <div class="control-group">
+                    <label for="artStyle">艺术风格:</label>
+                    <select id="artStyle">
+                        <option value="日式二次元风格">日式二次元风格</option>
+                        <option value="国风动漫">国风动漫</option>
+                        <option value="水彩画风格">水彩画风格</option>
+                        <option value="赛博朋克风格">赛博朋克风格</option>
+                        <option value="美式漫画风格">美式漫画风格</option>
+                        <option value="清新可爱风格">清新可爱风格</option>
+                        <option value="写实主义风格">写实主义风格</option>
+                        <option value="复古像素风格">复古像素风格</option>
+                        <option value="水墨国画风格">水墨国画风格</option>
+                        <option value="赤橙黄绿青蓝紫七彩风格">七彩梦幻风格</option>
+                    </select>
+                </div>
+            
+                <div class="control-group">
+                    <label for="mainCharacter">主角设定:</label>
+                    <select id="mainCharacter">
+                        <option value="少年">少年主角</option>
+                        <option value="少女">少女主角</option>
+                        <option value="双主角">少年少女双主角</option>
+                        <option value="多人组合">多人主角团</option>
+                        <option value="成年男性">成年男性</option>
+                        <option value="成年女性">成年女性</option>
+                        <option value="非人类">非人类主角</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="two-columns">
+                <div class="control-group">
+                    <label for="colorScheme">色彩方案:</label>
+                    <select id="colorScheme">
+                        <option value="鲜艳色彩">鲜艳色彩</option>
+                        <option value="柔和色调">柔和色调</option>
+                        <option value="高对比度">高对比度</option>
+                        <option value="复古色彩">复古色彩</option>
+                        <option value="暖色调">暖色调</option>
+                        <option value="冷色调">冷色调</option>
+                        <option value="黑白风格">黑白风格</option>
+                        <option value="霓虹灯效果">霓虹灯效果</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="artElements">艺术元素:</label>
+                    <select id="artElements">
+                        <option value="精细线条">精细线条</option>
+                        <option value="水彩晕染">水彩晕染</option>
+                        <option value="强烈光影">强烈光影</option>
+                        <option value="华丽背景">华丽背景</option>
+                        <option value="简约留白">简约留白</option>
+                        <option value="特写表情">特写表情</option>
+                        <option value="动感线条">动感线条</option>
+                        <option value="烟雾特效">烟雾特效</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="two-columns">
+                <div class="control-group">
+                    <label for="width">图片宽度:</label>
+                    <input type="number" id="width" value="512" min="100" max="1024">
+                </div>
+            
+                <div class="control-group">
+                    <label for="height">图片高度:</label>
+                    <input type="number" id="height" value="512" min="100" max="1024">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="useAI">
+                    <input type="checkbox" id="useAI" checked> 
+                    使用AI增强故事分解
+                </label>
+            </div>
+        </div>
+    </div>
+ 
+    <button id="generateBtn" onclick="generateComic()">生成连环画</button>
+ 
+    <div id="preview">
+        <h3 id="storyTitle"></h3>
+        <div id="storySummary" class="story-summary" style="display: none;"></div>
+        <div id="loadingMessage" class="loading" style="display: none;">正在创作连环画，请稍候...</div>
+        <div id="comicContainer" class="comic-container"></div>
+        <div class="button-container" style="display: none;" id="actionButtons">
+            <button onclick="downloadComic()" class="download-button">下载连环画</button>
+            <button onclick="shareComic()" class="share-button">分享作品</button>
+        </div>
+    </div>
+ 
+    <script>
+        // 模板预设内容
+        const templates = {
+            '青春校园': {
+                prompt: '一个普通高中生在校园里发现自己拥有读心术，开始了一段既有趣又尴尬的校园生活',
+                type: '青春校园',
+                style: '日式二次元风格',
+                character: '少年',
+                colorScheme: '鲜艳色彩',
+                artElements: '精细线条'
+            },
+            '仙侠修真': {
+                prompt: '一位凡人少年偶得古老修真秘籍，踏上了修仙问道、追寻长生的奇幻之旅',
+                type: '仙侠修真',
+                style: '国风动漫',
+                character: '少年',
+                colorScheme: '高对比度',
+                artElements: '烟雾特效'
+            },
+            '都市爱情': {
+                prompt: '事业有成的都市女性和咖啡店打工的音乐人邂逅，展开一段温馨浪漫的爱情故事',
+                type: '都市爱情',
+                style: '清新可爱风格',
+                character: '双主角',
+                colorScheme: '柔和色调',
+                artElements: '水彩晕染'
+            },
+            '科幻冒险': {
+                prompt: '未来世界里，一群年轻人探索被遗弃的太空站，发现了改变人类命运的秘密',
+                type: '科幻冒险',
+                style: '赛博朋克风格',
+                character: '多人组合',
+                colorScheme: '霓虹灯效果',
+                artElements: '强烈光影'
+            },
+            '热血战斗': {
+                prompt: '武道大会上，主角面对强大的对手，激发潜能，突破自我极限的热血故事',
+                type: '热血战斗',
+                style: '美式漫画风格',
+                character: '少年',
+                colorScheme: '高对比度',
+                artElements: '动感线条'
+            },
+            '唯美古风': {
+                prompt: '古代宫廷中，一位才女与皇子之间跨越身份藩篱的唯美爱情故事',
+                type: '唯美古风',
+                style: '水墨国画风格',
+                character: '少女',
+                colorScheme: '柔和色调',
+                artElements: '简约留白'
+            },
+            '奇幻冒险': {
+                prompt: '少年意外穿越到魔法世界，结交各种神奇的伙伴，踏上冒险之旅',
+                type: '奇幻冒险',
+                style: '日式二次元风格',
+                character: '少年',
+                colorScheme: '鲜艳色彩',
+                artElements: '华丽背景'
+            },
+            '甜蜜恋爱': {
+                prompt: '高中女生暗恋学长多年，终于鼓起勇气表白，开始了一段甜蜜的恋爱',
+                type: '甜蜜恋爱',
+                style: '清新可爱风格',
+                character: '少女',
+                colorScheme: '暖色调',
+                artElements: '特写表情'
+            }
+        };
+    
+        function applyTemplate(templateName) {
+            const template = templates[templateName];
+            if (template) {
+                document.getElementById('storyPrompt').value = template.prompt;
+                document.getElementById('storyType').value = template.type;
+                
+                // 如果高级选项中的内容已加载，也设置对应值
+                if (document.getElementById('artStyle')) {
+                    document.getElementById('artStyle').value = template.style;
+                }
+                if (document.getElementById('mainCharacter')) {
+                    document.getElementById('mainCharacter').value = template.character;
+                }
+                if (document.getElementById('colorScheme')) {
+                    document.getElementById('colorScheme').value = template.colorScheme;
+                }
+                if (document.getElementById('artElements')) {
+                    document.getElementById('artElements').value = template.artElements;
+                }
+            }
+        }
+    
+        function toggleAdvancedOptions() {
+            const advancedOptions = document.getElementById('advancedOptions');
+            advancedOptions.classList.toggle('hidden');
+            
+            const toggle = document.querySelector('.advanced-toggle');
+            if (advancedOptions.classList.contains('hidden')) {
+                toggle.textContent = '高级选项 ▼';
+            } else {
+                toggle.textContent = '高级选项 ▲';
+            }
+        }
+        
+        async function callGeminiAI(prompt) {
+            const apiKey = 'AIzaSyADj4bqq7w-AVEVSy3imYoNdrq9R-34VOo';
+            const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+            
+            try {
+                const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0 && 
+                    data.candidates[0].content && data.candidates[0].content.parts && 
+                    data.candidates[0].content.parts.length > 0) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error('无法从Gemini API响应中提取内容');
+                }
+            } catch (error) {
+                console.error('调用AI时出错:', error);
+                throw error;
+            }
+        }
+        
+        async function loadImageWithRetry(url, maxRetries = 3, retryDelay = 2000) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return url;
+                } catch (error) {
+                    console.log(`加载图片失败，尝试重试 ${i + 1}/${maxRetries}`);
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                }
+            }
+        }
+
+        async function generateComic() {
+            const storyPrompt = document.getElementById('storyPrompt').value;
+            const panelCount = parseInt(document.getElementById('panelCount').value);
+            const width = document.getElementById('width').value;
+            const height = document.getElementById('height').value;
+            const storyType = document.getElementById('storyType').value;
+            const artStyle = document.getElementById('artStyle')?.value || '日式二次元风格';
+            const mainCharacter = document.getElementById('mainCharacter')?.value || '少年';
+            const colorScheme = document.getElementById('colorScheme')?.value || '鲜艳色彩';
+            const artElements = document.getElementById('artElements')?.value || '精细线条';
+            const useAI = document.getElementById('useAI')?.checked !== false;
+            
+            const generateBtn = document.getElementById('generateBtn');
+            const comicContainer = document.getElementById('comicContainer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const storyTitle = document.getElementById('storyTitle');
+            const storySummary = document.getElementById('storySummary');
+            const actionButtons = document.getElementById('actionButtons');
+            
+            if (!storyPrompt) {
+                alert('请输入故事描述');
+                return;
+            }
+ 
+            // 清空之前的内容
+            comicContainer.innerHTML = '';
+            storyTitle.textContent = '';
+            storySummary.style.display = 'none';
+            storySummary.innerHTML = '';
+            actionButtons.style.display = 'none';
+            
+            // 显示加载信息
+            loadingMessage.style.display = 'block';
+            generateBtn.disabled = true;
+            
+            try {
+                // 生成故事标题
+                let title = `《${storyPrompt.split('。')[0]}》`;
+                let summary = '';
+                
+                // 分解故事为多个场景
+                let scenes = [];
+                
+                if (useAI) {
+                    try {
+                        // 使用AI来分解故事，优化提示词以生成更丰富的故事情节
+                        const aiPrompt = `
+                        作为一个专业的${storyType}漫画创作助手，请分析以下故事，并将其分解为${panelCount}个连贯且富有故事性的场景，用于创作精美的二次元连环画。
+
+                        故事: "${storyPrompt}"
+                        故事类型: ${storyType}
+                        主角设定: ${mainCharacter}
+                        艺术风格: ${artStyle}
+                        色彩方案: ${colorScheme}
+                        艺术元素: ${artElements}
+                        
+                        请按以下格式返回结果:
+                        
+                        标题: [创作一个吸引中国年轻人的漫画标题，有吸引力且能概括故事]
+                        
+                        故事概要: [用100-150字描述整个故事的主线，包括人物设定、情节发展和内在主题]
+                        
+                        关键情感: [列出3-5个故事中的关键情感]
+                        
+                        视觉元素: [列出3-5个应该在连环画中突出的视觉元素]
+                        
+                        场景1:
+                        - 标题: [为这个场景取一个简短有力的标题，10-20字]
+                        - 场景描述: [用30-50字简要描述这个场景中发生的事情]
+                        - 故事情节: [用100-150字详细描述这个场景的情节发展，包括背景铺垫、人物互动和情感变化]
+                        - 角色对话或内心独白: [添加1-2段相关的对话或角色内心独白，使故事更生动]
+                        - 情感基调: [描述这个场景的主要情感色彩]
+                        - 图像提示: [详细而具体的图像生成提示词，至少100字，包含以下元素：精确的人物外观描述、表情、动作、服装、场景环境、光影效果、氛围、构图、色彩、艺术风格特征]
+                        
+                        场景2:
+                        - 标题: [场景标题]
+                        - 场景描述: [简要场景描述]
+                        - 故事情节: [详细故事情节]
+                        - 角色对话或内心独白: [相关对话或独白]
+                        - 情感基调: [情感描述]
+                        - 图像提示: [详细图像提示词]
+                        
+                        ...以此类推
+                        
+                        请确保：
+                        1. 场景之间有紧密的连贯性和情节发展，前后呼应
+                        2. 人物形象、服装、发型等特征在各场景中保持一致
+                        3. 情感变化合理且引人入胜，有起伏和发展
+                        4. 角色对话自然且符合人物性格，增强故事代入感
+                        5. 每个场景都明确推动故事发展，不重复冗余
+                        6. 整体风格符合${storyType}类型的故事特点
+                        `;
+                        
+                        const aiResponse = await callGeminiAI(aiPrompt);
+                        
+                        // 解析AI返回的结果
+                        const titleMatch = aiResponse.match(/标题:\s*(.+?)(?:\n|$)/);
+                        if (titleMatch && titleMatch[1]) {
+                            title = `《${titleMatch[1].trim()}》`;
+                        }
+                        
+                        // 提取故事概要
+                        const summaryMatch = aiResponse.match(/故事概要:\s*(.+?)(?=\n\n|\n关键情感)/s);
+                        if (summaryMatch && summaryMatch[1]) {
+                            summary = summaryMatch[1].trim();
+                        }
+                        
+                        // 提取关键情感
+                        const emotionsMatch = aiResponse.match(/关键情感:\s*(.+?)(?=\n\n|\n视觉元素)/s);
+                        let emotions = [];
+                        if (emotionsMatch && emotionsMatch[1]) {
+                            emotions = emotionsMatch[1].trim().split(/[,，、]/).map(e => e.trim());
+                            // 清理可能包含的数字或破折号
+                            emotions = emotions.map(e => e.replace(/^\d+[\.\-、]\s*/, '').trim());
+                        }
+                        
+                        // 提取视觉元素
+                        const elementsMatch = aiResponse.match(/视觉元素:\s*(.+?)(?=\n\n|\n场景1)/s);
+                        let elements = [];
+                        if (elementsMatch && elementsMatch[1]) {
+                            elements = elementsMatch[1].trim().split(/[,，、]/).map(e => e.trim());
+                            // 清理可能包含的数字或破折号
+                            elements = elements.map(e => e.replace(/^\d+[\.\-、]\s*/, '').trim());
+                        }
+                        
+                        // 构建故事摘要HTML
+                        let summaryHTML = `<p>${summary}</p><div class="tags-container">`;
+                        
+                        // 添加情感标签
+                        if (emotions.length > 0) {
+                            emotions.forEach(emotion => {
+                                if (emotion) {
+                                    summaryHTML += `<span class="mood-tag">${emotion}</span>`;
+                                }
+                            });
+                        }
+                        
+                        // 添加视觉元素标签
+                        if (elements.length > 0) {
+                            elements.forEach(element => {
+                                if (element) {
+                                    summaryHTML += `<span class="element-tag">${element}</span>`;
+                                }
+                            });
+                        }
+                        
+                        summaryHTML += '</div>';
+                        
+                        // 提取场景信息，注意新增的字段
+                        const sceneRegex = /场景\d+:\s*\n\s*-\s*标题:\s*(.+)\s*\n\s*-\s*场景描述:\s*(.+)\s*\n\s*-\s*故事情节:\s*(.+)\s*\n\s*-\s*角色对话或内心独白:\s*(.+)\s*\n\s*-\s*情感基调:\s*(.+)\s*\n\s*-\s*图像提示:\s*(.+?)(?=\n\n场景|\n场景|\n*$)/gs;
+                        let match;
+                        while ((match = sceneRegex.exec(aiResponse)) !== null) {
+                            scenes.push({
+                                title: match[1].trim(),
+                                caption: match[2].trim(),
+                                storyDetail: match[3].trim(),
+                                dialog: match[4].trim(),
+                                emotion: match[5].trim(),
+                                imagePrompt: match[6].trim()
+                            });
+                        }
+                        
+                        // 如果没有成功提取场景，使用默认方法
+                        if (scenes.length === 0) {
+                            scenes = await generateDefaultScenes(storyPrompt, panelCount, artStyle, storyType, mainCharacter, colorScheme, artElements);
+                        } else {
+                            // 更新摘要
+                            storySummary.innerHTML = summaryHTML;
+                            storySummary.style.display = 'block';
+                        }
+                    } catch (error) {
+                        console.error('AI故事分解失败，使用默认方法:', error);
+                        scenes = await generateDefaultScenes(storyPrompt, panelCount, artStyle, storyType, mainCharacter, colorScheme, artElements);
+                    }
+                } else {
+                    scenes = await generateDefaultScenes(storyPrompt, panelCount, artStyle, storyType, mainCharacter, colorScheme, artElements);
+                }
+                
+                storyTitle.textContent = title;
+                
+                // 创建所有面板的容器，但暂不加载图片
+                const panels = scenes.map((scene, i) => {
+                    const panel = document.createElement('div');
+                    panel.className = 'comic-panel';
+                    
+                    const panelNumber = document.createElement('div');
+                    panelNumber.className = 'panel-number';
+                    panelNumber.textContent = i + 1;
+                    panel.appendChild(panelNumber);
+                    
+                    const img = document.createElement('img');
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.5s';
+                    panel.appendChild(img);
+                    
+                    // 创建更丰富的面板描述内容
+                    const caption = document.createElement('div');
+                    caption.className = 'panel-caption';
+                    
+                    const captionTitle = document.createElement('div');
+                    captionTitle.className = 'caption-title';
+                    captionTitle.textContent = scene.title || `第${i+1}幕`;
+                    
+                    const captionContent = document.createElement('div');
+                    captionContent.className = 'caption-content';
+                    captionContent.textContent = scene.caption;
+                    
+                    caption.appendChild(captionTitle);
+                    caption.appendChild(captionContent);
+                    
+                    // 添加详细的故事情节
+                    if (scene.storyDetail) {
+                        const storySeparator = document.createElement('div');
+                        storySeparator.className = 'story-separator';
+                        storySeparator.innerHTML = '✧ ✧ ✧';
+                        caption.appendChild(storySeparator);
+                        
+                        const storyDetail = document.createElement('div');
+                        storyDetail.className = 'caption-story';
+                        storyDetail.textContent = scene.storyDetail;
+                        caption.appendChild(storyDetail);
+                    }
+                    
+                    // 添加角色对话或内心独白
+                    if (scene.dialog) {
+                        const dialogContainer = document.createElement('div');
+                        dialogContainer.className = 'caption-dialog';
+                        
+                        // 处理对话格式，支持多个角色的对话
+                        const dialogLines = scene.dialog.split(/\n|。(?=\S)/).filter(line => line.trim());
+                        dialogLines.forEach(line => {
+                            const dialogLine = document.createElement('div');
+                            dialogLine.className = 'character-dialog';
+                            
+                            // 尝试识别角色名和对话内容
+                            if (line.includes('：') || line.includes(':')) {
+                                const parts = line.split(/：|:/);
+                                const charName = document.createElement('span');
+                                charName.className = 'character-name';
+                                charName.textContent = parts[0].trim();
+                                
+                                dialogLine.appendChild(charName);
+                                dialogLine.appendChild(document.createTextNode(parts.slice(1).join(':').trim()));
+                            } else if (line.startsWith('「') || line.startsWith('"')) {
+                                // 可能是内心独白
+                                dialogLine.className += ' character-thought';
+                                dialogLine.textContent = line;
+                            } else {
+                                dialogLine.textContent = line;
+                            }
+                            
+                            dialogContainer.appendChild(dialogLine);
+                        });
+                        
+                        caption.appendChild(dialogContainer);
+                    }
+                    
+                    // 添加情感基调信息
+                    if (scene.emotion) {
+                        const emotionTag = document.createElement('div');
+                        emotionTag.className = 'mood-tag';
+                        emotionTag.textContent = scene.emotion;
+                        caption.appendChild(emotionTag);
+                    }
+                    
+                    panel.appendChild(caption);
+                    
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'panel-loading';
+                    loadingIndicator.textContent = '加载中...';
+                    loadingIndicator.style.position = 'absolute';
+                    loadingIndicator.style.top = '50%';
+                    loadingIndicator.style.left = '50%';
+                    loadingIndicator.style.transform = 'translate(-50%, -50%)';
+                    panel.appendChild(loadingIndicator);
+                    
+                    comicContainer.appendChild(panel);
+                    return { panel, img, loadingIndicator, scene };
+                });
+                
+                // 分批加载图片
+                const batchSize = 3; // 每批加载的图片数量
+                for (let i = 0; i < panels.length; i += batchSize) {
+                    const batch = panels.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async ({ panel, img, loadingIndicator, scene }) => {
+                        try {
+                            const seed = Math.floor(Math.random() * 1000);
+                            
+                            // 增强图像提示词，使其更加详细和丰富
+                            let enhancedPrompt = scene.imagePrompt;
+                            
+                            // 确保提示词包含艺术风格和色彩信息
+                            if (!enhancedPrompt.includes(artStyle)) {
+                                enhancedPrompt += `, ${artStyle}`;
+                            }
+                            
+                            if (!enhancedPrompt.includes(colorScheme)) {
+                                enhancedPrompt += `, ${colorScheme}`;
+                            }
+                            
+                            // 添加质量增强标签
+                            enhancedPrompt += `, detailed, high quality, vibrant colors, dynamic composition, expressive, emotional impact`;
+                            
+                            // 添加特定的艺术元素
+                            if (artElements && !enhancedPrompt.includes(artElements)) {
+                                enhancedPrompt += `, ${artElements}`;
+                            }
+                            
+                            const encodedPrompt = encodeURIComponent(enhancedPrompt);
+                            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+                            
+                            // 尝试加载图片
+                            await loadImageWithRetry(imageUrl);
+                            
+                            // 图片加载成功后显示
+                            img.src = imageUrl;
+                            img.onload = () => {
+                                loadingIndicator.remove();
+                                img.style.opacity = '1';
+                            };
+                        } catch (error) {
+                            console.error('加载图片失败:', error);
+                            loadingIndicator.textContent = '加载失败，点击重试';
+                            loadingIndicator.style.cursor = 'pointer';
+                            loadingIndicator.onclick = () => {
+                                loadingIndicator.textContent = '重新加载中...';
+                                generateImage(panel, img, loadingIndicator, scene, artStyle, colorScheme, artElements, width, height);
+                            };
+                        }
+                    }));
+                    
+                    // 批次之间添加短暂延迟
+                    if (i + batchSize < panels.length) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+                
+                // 显示操作按钮
+                actionButtons.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('生成连环画时出错:', error);
+                alert('生成连环画时出错，请重试');
+            } finally {
+                // 隐藏加载信息
+                loadingMessage.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        async function generateImage(panel, img, loadingIndicator, scene, artStyle, colorScheme, artElements, width, height) {
+            try {
+                const seed = Math.floor(Math.random() * 1000);
+                
+                // 增强图像提示词
+                let enhancedPrompt = scene.imagePrompt;
+                
+                // 确保提示词包含艺术风格和色彩信息
+                if (!enhancedPrompt.includes(artStyle)) {
+                    enhancedPrompt += `, ${artStyle}`;
+                }
+                
+                if (!enhancedPrompt.includes(colorScheme)) {
+                    enhancedPrompt += `, ${colorScheme}`;
+                }
+                
+                // 添加质量增强标签
+                enhancedPrompt += `, detailed, high quality, vibrant colors, dynamic composition, expressive, emotional impact`;
+                
+                // 添加特定的艺术元素
+                if (artElements && !enhancedPrompt.includes(artElements)) {
+                    enhancedPrompt += `, ${artElements}`;
+                }
+                
+                const encodedPrompt = encodeURIComponent(enhancedPrompt);
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+                
+                await loadImageWithRetry(imageUrl);
+                
+                img.src = imageUrl;
+                img.onload = () => {
+                    loadingIndicator.remove();
+                    img.style.opacity = '1';
+                };
+            } catch (error) {
+                console.error('重新加载图片失败:', error);
+                loadingIndicator.textContent = '加载失败，点击重试';
+            }
+        }
+        
+        // 修改默认的场景生成方法，增加故事情节和对话
+        async function generateDefaultScenes(storyPrompt, panelCount, artStyle, storyType, mainCharacter, colorScheme, artElements) {
+            const scenes = [];
+            
+            // 根据故事类型设定不同的场景模板
+            const sceneTemplates = {
+                '青春校园': [
+                    { title: '初见时刻', template: '教室内窗边阳光照射下的邂逅', emotion: '好奇、紧张' },
+                    { title: '走廊相遇', template: '校园走廊上擦肩而过的瞬间', emotion: '惊喜、羞涩' },
+                    { title: '屋顶午餐', template: '在学校屋顶共享午餐的温馨时光', emotion: '放松、愉快' },
+                    { title: '放学路上', template: '夕阳下并肩同行的放学路', emotion: '期待、温暖' },
+                    { title: '社团活动', template: '热火朝天的社团活动现场', emotion: '激情、专注' },
+                    { title: '体育场热血', template: '体育场上挥洒汗水的青春瞬间', emotion: '奋斗、激励' },
+                    { title: '图书馆静谧', template: '图书馆内安静学习的专注时刻', emotion: '平静、思考' },
+                    { title: '校园角落', template: '校园隐秘角落的私密谈话', emotion: '坦诚、信任' }
+                ],
+                '仙侠修真': [
+                    { title: '拜师入门', template: '仙门山脉前的拜师仪式', emotion: '敬畏、决心' },
+                    { title: '洞府修行', template: '在神秘洞府中打坐修炼', emotion: '专注、坚毅' },
+                    { title: '仙家集市', template: '热闹繁华的仙家集市奇遇', emotion: '惊奇、兴奋' },
+                    { title: '瀑布悟道', template: '在磅礴瀑布前顿悟天机', emotion: '顿悟、超脱' },
+                    { title: '秘境探险', template: '探索未知仙境的冒险经历', emotion: '勇气、好奇' },
+                    { title: '御剑飞行', template: '踏剑凌空飞行的壮观场景', emotion: '自由、喜悦' },
+                    { title: '仙术对决', template: '施展法术的激烈对决场面', emotion: '紧张、决绝' },
+                    { title: '得道升仙', template: '突破境界时的灵光环绕', emotion: '成就、超然' }
+                ],
+                '都市爱情': [
+                    { title: '咖啡馆邂逅', template: '咖啡馆里的偶然相遇', emotion: '惊喜、好奇' },
+                    { title: '办公室对视', template: '忙碌办公室中的眼神交流', emotion: '紧张、期待' },
+                    { title: '城市漫步', template: '繁华都市街头的慢走', emotion: '放松、亲近' },
+                    { title: '公园畅谈', template: '城市公园的长椅深谈', emotion: '理解、共鸣' },
+                    { title: '屋顶星空', template: '高楼屋顶下的星空约会', emotion: '浪漫、珍视' },
+                    { title: '雨中相遇', template: '大雨中共撑一把伞', emotion: '暖心、依赖' },
+                    { title: '烛光晚餐', template: '精致餐厅的烛光晚餐', emotion: '甜蜜、幸福' },
+                    { title: '海边告白', template: '夕阳下海边沙滩的告白', emotion: '勇敢、爱慕' }
+                ]
+            };
+            
+            // 通用场景模板，适用于所有故事类型
+            const genericTemplates = [
+                { title: '故事开始', template: '故事的起始场景', emotion: '期待、好奇' },
+                { title: '关系建立', template: '主角间关系开始建立', emotion: '探索、犹豫' },
+                { title: '情节发展', template: '故事情节渐渐展开', emotion: '投入、关注' },
+                { title: '冲突出现', template: '主要冲突初次呈现', emotion: '紧张、不安' },
+                { title: '危机时刻', template: '面临重大挑战或困境', emotion: '压力、焦虑' },
+                { title: '转折点', template: '故事出现重大转折', emotion: '震惊、调整' },
+                { title: '成长时刻', template: '主角经历成长或顿悟', emotion: '领悟、成长' },
+                { title: '高潮场景', template: '故事达到情感高潮', emotion: '激动、释放' },
+                { title: '冲突解决', template: '主要问题得到解决', emotion: '释然、满足' },
+                { title: '温馨结局', template: '故事美好的结束', emotion: '满足、圆满' }
+            ];
+            
+            // 根据主角设定增加人物描述
+            const characterDesc = {
+                '少年': '充满活力的少年主角，表情生动，眼神坚定，姿态自信',
+                '少女': '可爱的少女主角，表情丰富，动作优雅，眼神明亮',
+                '双主角': '少年和少女主角，互动自然，表情呼应，姿态相配',
+                '多人组合': '不同性格的主角团队，表情各异，互动丰富，站位有层次',
+                '成年男性': '成熟稳重的男性主角，神情深邃，举止从容，身姿挺拔',
+                '成年女性': '优雅自信的女性主角，神情从容，姿态高贵，目光坚定',
+                '非人类': '独特外形的非人类主角，神秘气质，独特姿态，异于常人的特征'
+            };
+            
+            // 获取当前故事类型的场景模板，如果没有则使用通用模板
+            const templates = sceneTemplates[storyType] || genericTemplates;
+            
+            // 构建场景序列，确保每个场景都有详细的标题和描述
+            const storyProgression = [];
+            
+            // 开场
+            storyProgression.push({
+                title: templates[0]?.title || '故事开始',
+                template: templates[0]?.template || '故事的起始场景',
+                emotion: templates[0]?.emotion || '期待、好奇',
+                phase: '开始'
+            });
+            
+            // 中间场景 - 计算需要的中间场景数量
+            const middleSceneCount = panelCount - 2; // 减去开始和结束场景
+            
+            for (let i = 0; i < middleSceneCount; i++) {
+                const progress = i / middleSceneCount; // 0到1之间的进度
+                let phase;
+                
+                if (progress < 0.33) {
+                    phase = '发展';
+                } else if (progress < 0.66) {
+                    phase = '冲突';
+                } else {
+                    phase = '高潮';
+                }
+                
+                // 选择模板，如果模板数量不足，则循环使用
+                const templateIndex = 1 + i % (templates.length - 2); // 跳过第一个和最后一个模板
+                
+                storyProgression.push({
+                    title: templates[templateIndex]?.title || `${phase}阶段`,
+                    template: templates[templateIndex]?.template || `故事的${phase}情节`,
+                    emotion: templates[templateIndex]?.emotion || '情感变化',
+                    phase: phase
+                });
+            }
+            
+            // 结局
+            storyProgression.push({
+                title: templates[templates.length - 1]?.title || '故事结束',
+                template: templates[templates.length - 1]?.template || '故事的完美结局',
+                emotion: templates[templates.length - 1]?.emotion || '满足、圆满',
+                phase: '结束'
+            });
+            
+            // 基于情节进展生成详细场景
+            for (let i = 0; i < storyProgression.length; i++) {
+                const progression = storyProgression[i];
+                const colorWords = colorScheme === '鲜艳色彩' ? '鲜艳的色彩，生动的对比' : 
+                                  colorScheme === '暖色调' ? '温暖的黄橙色调，柔和的光线' :
+                                  colorScheme === '冷色调' ? '清冷的蓝紫色调，锐利的光影' :
+                                  colorScheme === '高对比度' ? '强烈的明暗对比，鲜明的色彩冲突' :
+                                  colorScheme === '柔和色调' ? '柔和的色彩过渡，和谐的色彩搭配' : '丰富多彩的色调';
+                
+                const artDetail = artElements === '精细线条' ? '精细流畅的线条，清晰的轮廓' :
+                               artElements === '厚重笔触' ? '浓厚有力的笔触，强烈的质感' :
+                               artElements === '水墨渲染' ? '如水墨般流动的渲染效果，富有层次' :
+                               artElements === '光影对比' ? '强烈的光影对比，塑造立体感' :
+                               artElements === '细腻质感' ? '精细的材质表现，丰富的纹理细节' : '精美的艺术表现';
+                
+                // 为不同阶段定制情节描述的语气和内容
+                let moodDesc;
+                let sceneDetail;
+                let storyDetail;
+                let characterDialog;
+                
+                // 根据故事类型和主角设定生成基本的角色名
+                const characterNames = {
+                    '少年': ['小明', '阳阳', '小峰', '大志', '晓风'],
+                    '少女': ['小雅', '梦梦', '小兰', '小樱', '晓雪'],
+                    '双主角': ['小明和小雅', '阳阳和梦梦', '晓风和晓雪'],
+                    '多人组合': ['小明、小雅和大志', '冒险小队', '好友们'],
+                    '成年男性': ['李先生', '王教授', '陈队长', '林医生'],
+                    '成年女性': ['张小姐', '林教授', '李经理', '王医生'],
+                    '非人类': ['阿灵', '幻形', '星辰', '影子', '云游']
+                };
+                
+                // 随机选择一个角色名
+                const names = characterNames[mainCharacter] || characterNames['少年'];
+                const mainName = names[Math.floor(Math.random() * names.length)];
+                
+                switch (progression.phase) {
+                    case '开始':
+                        moodDesc = `故事开始，充满${progression.emotion}的氛围`;
+                        sceneDetail = `${progression.template}，引入主要人物和故事背景`;
+                        storyDetail = `在这个${storyType}的世界里，我们的主角${mainName}首次登场。${storyPrompt}的故事就此展开，一切都充满了新鲜感和可能性。背景环境透露出故事即将发生的氛围，主角的表情和姿态也暗示了未来的发展方向。`;
+                        characterDialog = `${mainName}："这是一个全新的开始，我感觉未来充满了无限可能。"\n内心独白："不知道前方等待我的会是什么样的冒险和挑战呢？"`;
+                        break;
+                    
+                    case '发展':
+                        moodDesc = `情节发展，人物间${progression.emotion}的互动`;
+                        sceneDetail = `${progression.template}，故事情节逐渐深入`;
+                        storyDetail = `故事进一步展开，${mainName}开始逐渐适应新环境并建立关系网。角色性格特点更加明显，与其他人物的互动也更加丰富。这一阶段埋下了后续发展的伏笔，情节开始向着更加复杂的方向发展。`;
+                        characterDialog = `${mainName}："我开始理解这一切的规则和挑战了。"\n旁白："随着时间推移，主角的视野逐渐开阔，看到了更广阔的世界。"`;
+                        break;
+                    
+                    case '冲突':
+                        moodDesc = `冲突加剧，${progression.emotion}的情绪强烈`;
+                        sceneDetail = `${progression.template}，角色面临挑战与抉择`;
+                        storyDetail = `${mainName}面临重大抉择或挑战，内心冲突与外部压力并存。这是故事的转折点，主角必须做出决定或面对困境。周围的环境和人物反应都反映了这种紧张局势，气氛紧张而充满戏剧性。`;
+                        characterDialog = `${mainName}："我没想到会变成这样，但我不会退缩！"\n对手："你真的以为凭你的能力可以改变什么吗？"`;
+                        break;
+                    
+                    case '高潮':
+                        moodDesc = `故事高潮，${progression.emotion}达到顶点`;
+                        sceneDetail = `${progression.template}，关键情节的决定性时刻`;
+                        storyDetail = `这是故事中最激动人心的时刻，${mainName}全力以赴面对最大的挑战。所有前面埋下的伏笔在此刻爆发，角色展现出前所未有的决心和能力。场景充满动感和戏剧性，情感达到最高点。`;
+                        characterDialog = `${mainName}："这就是我一直在寻找的答案！现在我明白了！"\n内心独白："无论结果如何，我都不会后悔自己的选择。"`;
+                        break;
+                    
+                    case '结束':
+                        moodDesc = `故事结局，${progression.emotion}的情感升华`;
+                        sceneDetail = `${progression.template}，完美收束故事线索`;
+                        storyDetail = `故事走向结局，${mainName}的旅程暂告一段落。这个场景既是对之前所有情节的回应，也是对角色成长的总结。我们看到主角因为这段经历而有所改变，整个故事的主题和寓意在此得到升华。`;
+                        characterDialog = `${mainName}："经历了这一切，我终于明白了真正重要的是什么。"\n旁白："结束也是新的开始，故事虽然告一段落，但生活仍在继续。"`;
+                        break;
+                    
+                    default:
+                        moodDesc = `情节推进，${progression.emotion}的场景`;
+                        sceneDetail = progression.template;
+                        storyDetail = `故事继续发展，${mainName}的经历变得更加丰富多彩。这一刻既是之前情节的延续，也为后续发展埋下伏笔。角色的情感和认知都在此刻有所变化，推动整个故事向前发展。`;
+                        characterDialog = `${mainName}："每一步都让我更接近真相。"\n朋友："不管发生什么，我们都会一起面对。"`;
+                }
+                
+                // 生成详细的图像提示词，确保包含足够的细节
+                const detailedPrompt = `
+                ${storyPrompt}中的${sceneDetail}。
+                ${characterDesc[mainCharacter]}。
+                场景展现${moodDesc}。
+                画面呈现${colorWords}。
+                艺术表现采用${artDetail}。
+                ${artStyle}的视觉风格，构图精美，细节丰富。
+                情绪表达真实自然，画面讲述故事。
+                `;
+                
+                scenes.push({
+                    title: progression.title,
+                    caption: sceneDetail,
+                    storyDetail: storyDetail,
+                    dialog: characterDialog,
+                    emotion: progression.emotion,
+                    imagePrompt: detailedPrompt.replace(/\n\s+/g, ' ').trim()
+                });
+            }
+            
+            return scenes;
+        }
+        
+        // 下载连环画功能
+        function downloadComic() {
+            alert('功能开发中，即将支持下载连环画为PDF或图片集合！');
+        }
+        
+        // 分享连环画功能
+        function shareComic() {
+            alert('功能开发中，即将支持分享到社交平台！');
+        }
+    </script>
+</body>
+</html>
